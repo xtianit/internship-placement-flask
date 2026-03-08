@@ -9,18 +9,17 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
-
-# Load base config FIRST
 app.config.from_object(Config)
 
-# Mail config from .env — no hardcoded credentials
-app.config['MAIL_SERVER']         = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT']           = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS']        = os.getenv('MAIL_USE_TLS') == 'True'
-app.config['MAIL_USERNAME']       = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD']       = os.getenv('MAIL_PASSWORD')
+# Mail config using Environment Variables
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS') == 'True'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
+# supports_credentials allows React to send cookies/tokens
 CORS(app, supports_credentials=True)
 jwt = JWTManager(app)
 mail.init_app(app)
@@ -28,43 +27,35 @@ mail.init_app(app)
 from models import db
 db.init_app(app)
 
-from models.user        import User, Role
-from models.student     import Student
-from models.employer    import Employer
-from models.posting     import Posting, Skill
+# Import models to ensure they are created
+from models.user import User, Role
+from models.student import Student
+from models.employer import Employer
+from models.posting import Posting, Skill
 from models.application import Application, Resume
 
-from routes.auth         import auth_bp
-from routes.postings     import postings_bp
+# Import and Register Blueprints
+from routes.auth import auth_bp
+from routes.postings import postings_bp
 from routes.applications import applications_bp
-from routes.students     import students_bp
-from routes.employers    import employers_bp
+from routes.students import students_bp
+from routes.employers import employers_bp
 
-app.register_blueprint(auth_bp,         url_prefix='/api/auth')
-app.register_blueprint(postings_bp,     url_prefix='/api/postings')
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(postings_bp, url_prefix='/api/postings')
 app.register_blueprint(applications_bp, url_prefix='/api/applications')
-app.register_blueprint(students_bp,     url_prefix='/api/student')
-app.register_blueprint(employers_bp,    url_prefix='/api/employer')
+app.register_blueprint(students_bp, url_prefix='/api/student')
+app.register_blueprint(employers_bp, url_prefix='/api/employer')
 
-@app.route('/api/stats')
-def stats():
-    from datetime import date
-    return jsonify({
-        'students':  Student.query.count(),
-        'postings':  Posting.query.filter_by(status='PUBLISHED')
-                        .filter(Posting.deadline >= date.today()).count(),
-        'companies': Employer.query.count(),
-    }), 200
+# Ensure tables exist in Railway
+with app.app_context():
+    db.create_all()
 
-@app.cli.command('seed-roles')
-def seed_roles():
-    for name in ['ADMIN', 'STUDENT', 'EMPLOYER']:
-        if not Role.query.filter_by(name=name).first():
-            db.session.add(Role(name=name))
-    db.session.commit()
-    print('Roles seeded: ADMIN, STUDENT, EMPLOYER')
+@app.route('/')
+def home():
+    return jsonify({"status": "API is running", "message": "InternBridge Backend Live"}), 200
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True, port=5000)
+    # Use dynamic port for Render, default to 5000 for local
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
