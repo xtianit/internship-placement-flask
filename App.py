@@ -51,6 +51,8 @@ app.register_blueprint(employers_bp, url_prefix='/api/employer')
 with app.app_context():
     db.create_all()
 
+
+
 @app.route('/api/stats')
 def stats():
     from datetime import date
@@ -63,6 +65,17 @@ def stats():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+
+
+
+
+
+
+
+
 
 @app.route('/')
 def home():
