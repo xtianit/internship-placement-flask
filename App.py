@@ -11,6 +11,8 @@ load_dotenv()
 app = Flask(__name__)
 app.config.from_object(Config)
 
+
+
 # Mail config using Environment Variables
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -21,6 +23,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 # supports_credentials allows React to send cookies/tokens
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
 jwt = JWTManager(app)
 mail.init_app(app)
 
@@ -55,11 +58,11 @@ with app.app_context():
 
 # --- ADD THIS RIGHT BEFORE THE if __name__ == '__main__': LINE ---
 
+
 @app.route('/api/stats')
 def stats():
     from datetime import date
     try:
-        # We fetch counts directly from the database models
         return jsonify({
             'students': Student.query.count(),
             'postings': Posting.query.filter_by(status='PUBLISHED')
@@ -69,12 +72,14 @@ def stats():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+
+
+
+
 @app.route('/')
 def home():
-    return jsonify({
-        "status": "API is running", 
-        "database": "Connected to Railway"
-    }), 200
+    return jsonify({"status": "API is running"}), 200
 
 
 
